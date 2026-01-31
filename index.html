@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+    <title>Sabia Investments Properties Inc.</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js" integrity="sha512-GsLlZN/3F2ErC5ifS5QtgpiJtWd43JWSuIgh7mbzZ8zBps+dvLusV+eNQATqgA/HdeKFVgA5v3S/cIrLF7QnIg==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <script src="https://unpkg.com/heic2any@0.0.4/dist/heic2any.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            fontFamily: {
+              sans: ['Inter', 'sans-serif'],
+            },
+            colors: {
+              vestra: {
+                900: '#0f172a', // Deep Navy / Slate 900
+                800: '#1e293b',
+                700: '#334155',
+                gold: '#d4af37', // Premium accent
+                light: '#f8fafc',
+              }
+            }
+          }
+        }
+      }
+    </script>
+    <style>
+      /* Custom scrollbar for webkit */
+      ::-webkit-scrollbar {
+        width: 8px;
+        height: 8px;
+      }
+      ::-webkit-scrollbar-track {
+        background: #0f172a; 
+      }
+      ::-webkit-scrollbar-thumb {
+        background: #334155; 
+        border-radius: 4px;
+      }
+      ::-webkit-scrollbar-thumb:hover {
+        background: #475569; 
+      }
+      /* Hide scrollbar for mobile clean look but allow scroll */
+      .no-scrollbar::-webkit-scrollbar {
+        display: none;
+      }
+      .no-scrollbar {
+        -ms-overflow-style: none;
+        scrollbar-width: none;
+      }
+
+      /* Print Styles for PDF Generation */
+      @media print {
+        @page {
+          margin: 0.5cm;
+          size: auto;
+        }
+        
+        body {
+          margin: 0;
+          padding: 0;
+          background-color: white !important;
+          color: black !important;
+          /* Force color adjust to ensure our specific borders print, but we rely on Tailwind print: classes to remove backgrounds */
+          -webkit-print-color-adjust: exact !important; 
+          print-color-adjust: exact !important;
+        }
+
+        /* 
+          CRITICAL FIX: 
+          Do NOT use 'display: none' on parents (like #root), or the child (.printable-area) 
+          will never show up. 
+          
+          Instead, we use visibility: hidden on everything, 
+          and then visibility: visible on the specific print area.
+        */
+        body * {
+          visibility: hidden; 
+        }
+
+        .printable-area {
+          visibility: visible !important;
+          position: absolute !important;
+          left: 0 !important;
+          top: 0 !important;
+          width: 100% !important;
+          margin: 0 !important;
+          padding: 0 !important;
+          background-color: white !important;
+          z-index: 999999 !important;
+          /* Scale set to 79% per user request */
+          zoom: 0.79;
+        }
+        
+        .printable-area * {
+          visibility: visible !important;
+        }
+
+        /* Ensure charts text is visible on white paper */
+        .recharts-text {
+          fill: #000000 !important;
+        }
+        .recharts-surface {
+          overflow: visible !important;
+        }
+        
+        /* Hide UI elements explicitly marked as no-print */
+        .no-print {
+          display: none !important;
+        }
+        
+        /* Ensure Grid layouts work in print */
+        .print\:grid {
+            display: grid !important;
+        }
+      }
+    </style>
+<script type="importmap">
+{
+  "imports": {
+    "react": "https://esm.sh/react@^19.2.4",
+    "react-dom/": "https://esm.sh/react-dom@^19.2.4/",
+    "react/": "https://esm.sh/react@^19.2.4/",
+    "@google/genai": "https://esm.sh/@google/genai@^1.38.0",
+    "lucide-react": "https://esm.sh/lucide-react@^0.563.0",
+    "recharts": "https://esm.sh/recharts@^3.7.0",
+    "express": "https://esm.sh/express@^5.2.1",
+    "cors": "https://esm.sh/cors@^2.8.6",
+    "body-parser": "https://esm.sh/body-parser@^2.2.2",
+    "module": "https://esm.sh/module@^2.0.0",
+    "path": "https://esm.sh/path@^0.12.7",
+    "url": "https://esm.sh/url@^0.11.4",
+    "fs": "https://esm.sh/fs@^0.0.1-security",
+    "vite": "https://esm.sh/vite@^7.3.1",
+    "@vitejs/plugin-react": "https://esm.sh/@vitejs/plugin-react@^5.1.2",
+    "child_process": "https://esm.sh/child_process@^1.0.2",
+    "sqlite3": "https://esm.sh/sqlite3@^5.1.7"
+  }
+}
+</script>
+<link rel="stylesheet" href="/index.css">
+</head>
+  <body class="bg-slate-950 text-slate-100 antialiased selection:bg-vestra-gold selection:text-slate-900">
+    <div id="root"></div>
+    <script type="module" src="./index.tsx"></script>
+  <script type="module" src="/index.tsx"></script>
+</body>
+</html>

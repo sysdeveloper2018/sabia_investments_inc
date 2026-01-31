@@ -1,0 +1,5 @@
+2026/01/25-18:17:26.513 2f03 Creating DB /Users/saulareizagasr./Downloads/sabia-investments-properties-inc./zillow_user_session/Default/Local Storage/leveldb since it was missing.
+2026/01/25-18:17:26.543 2f03 Reusing MANIFEST /Users/saulareizagasr./Downloads/sabia-investments-properties-inc./zillow_user_session/Default/Local Storage/leveldb/MANIFEST-000001
+2026/01/25-18:18:32.613 3203 Level-0 table #5: started
+2026/01/25-18:18:32.630 3203 Level-0 table #5: 379783 bytes OK
+2026/01/25-18:18:32.650 3203 Delete type=0 #3

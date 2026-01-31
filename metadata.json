@@ -1,0 +1,7 @@
+{
+  "name": "Sabia Investments Properties Inc.",
+  "description": "A professional-grade real estate investment management platform for property tracking, contractor management, financial analysis, and communication logging.",
+  "requestFramePermissions": [
+    "microphone"
+  ]
+}
