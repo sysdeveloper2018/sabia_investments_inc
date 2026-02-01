@@ -37,3 +37,6 @@ ShaderCache/
 first_party_sets.db
 segmentation_platform/
 *.py
+
+# Local Netlify folder
+.netlify

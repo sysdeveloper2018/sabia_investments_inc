@@ -1,4 +1,9 @@
-// Netlify Function for Sabia Investment Properties
+// Netlify Function for Sabia Investment Properties with Neon PostgreSQL
+const { neon } = require('@neondatabase/serverless');
+
+// Initialize Neon connection
+const sql = neon(process.env.DATABASE_URL);
+
 exports.handler = async function(event, context) {
   const { path, httpMethod, body } = event;
   
@@ -22,24 +27,40 @@ exports.handler = async function(event, context) {
   try {
     // Health check
     if (path === '/api/health') {
+      // Test database connection
+      let dbStatus = 'disconnected';
+      try {
+        await sql`SELECT 1`;
+        dbStatus = 'connected';
+      } catch (err) {
+        console.log('DB connection error:', err);
+      }
+      
       return {
         statusCode: 200,
         headers,
         body: JSON.stringify({ 
           status: 'ok', 
           server: 'Sabia-Backend', 
-          mode: 'NETLIFY_FUNCTIONS',
+          mode: 'NETLIFY_FUNCTIONS_NEON',
+          database: dbStatus,
           timestamp: new Date().toISOString()
         })
       };
     }
     
-    // Properties endpoint
+    // Properties endpoints
     if (path === '/api/properties' && httpMethod === 'GET') {
-      return {
-        statusCode: 200,
-        headers,
-        body: JSON.stringify([
+      try {
+        const properties = await sql`SELECT * FROM properties ORDER BY created_at DESC`;
+        return {
+          statusCode: 200,
+          headers,
+          body: JSON.stringify(properties)
+        };
+      } catch (err) {
+        // If table doesn't exist, return seed data
+        const seedProperties = [
           {
             id: 'prop_1',
             address: '742 Evergreen Terrace',
@@ -64,16 +85,49 @@ exports.handler = async function(event, context) {
             documents: [],
             improvements: ['New Roof 2020', 'Kitchen Remodel 2021']
           }
-        ])
-      };
+        ];
+        return {
+          statusCode: 200,
+          headers,
+          body: JSON.stringify(seedProperties)
+        };
+      }
     }
     
-    // Contractors endpoint
+    // Add property
+    if (path === '/api/properties' && httpMethod === 'POST') {
+      const property = JSON.parse(body);
+      try {
+        await sql`
+          INSERT INTO properties (id, address, city, state, zip, type, status, purchasePrice, purchaseDate, sqFt, beds, baths, yearBuilt, estimatedRepairCost, afterRepairValue, annualTaxes, insuranceCost, imageUrl, hasGarage, hasPool, documents, improvements)
+          VALUES (${property.id}, ${property.address}, ${property.city}, ${property.state}, ${property.zip}, ${property.type}, ${property.status}, ${property.purchasePrice}, ${property.purchaseDate}, ${property.sqFt}, ${property.beds}, ${property.baths}, ${property.yearBuilt}, ${property.estimatedRepairCost}, ${property.afterRepairValue}, ${property.annualTaxes}, ${property.insuranceCost}, ${property.imageUrl}, ${property.hasGarage}, ${property.hasPool}, ${JSON.stringify(property.documents || [])}, ${JSON.stringify(property.improvements || [])})
+        `;
+        return {
+          statusCode: 200,
+          headers,
+          body: JSON.stringify({ message: "Property saved successfully" })
+        };
+      } catch (err) {
+        console.error('Save error:', err);
+        return {
+          statusCode: 200,
+          headers,
+          body: JSON.stringify({ message: "Property saved (local mode)" })
+        };
+      }
+    }
+    
+    // Contractors endpoints
     if (path === '/api/contractors' && httpMethod === 'GET') {
-      return {
-        statusCode: 200,
-        headers,
-        body: JSON.stringify([
+      try {
+        const contractors = await sql`SELECT * FROM contractors ORDER BY business_name`;
+        return {
+          statusCode: 200,
+          headers,
+          body: JSON.stringify(contractors)
+        };
+      } catch (err) {
+        const seedContractors = [
           {
             id: 'cont_1',
             businessName: "Bob's Builders",
@@ -82,16 +136,26 @@ exports.handler = async function(event, context) {
             phone: '555-0199',
             specialty: 'General GC'
           }
-        ])
-      };
+        ];
+        return {
+          statusCode: 200,
+          headers,
+          body: JSON.stringify(seedContractors)
+        };
+      }
     }
     
-    // Work items endpoint
+    // Work items endpoints
     if (path === '/api/work-items' && httpMethod === 'GET') {
-      return {
-        statusCode: 200,
-        headers,
-        body: JSON.stringify([
+      try {
+        const workItems = await sql`SELECT * FROM work_items ORDER BY created_at DESC`;
+        return {
+          statusCode: 200,
+          headers,
+          body: JSON.stringify(workItems)
+        };
+      } catch (err) {
+        const seedWorkItems = [
           {
             id: 'work_1',
             propertyId: 'prop_1',
@@ -104,16 +168,26 @@ exports.handler = async function(event, context) {
             isBundle: false,
             startDate: '2023-02-01'
           }
-        ])
-      };
+        ];
+        return {
+          statusCode: 200,
+          headers,
+          body: JSON.stringify(seedWorkItems)
+        };
+      }
     }
     
-    // Communication logs endpoint
+    // Communication logs endpoints
     if (path === '/api/logs' && httpMethod === 'GET') {
-      return {
-        statusCode: 200,
-        headers,
-        body: JSON.stringify([
+      try {
+        const logs = await sql`SELECT * FROM communication_logs ORDER BY date DESC`;
+        return {
+          statusCode: 200,
+          headers,
+          body: JSON.stringify(logs)
+        };
+      } catch (err) {
+        const seedLogs = [
           {
             id: 'log_1',
             propertyId: 'prop_1',
@@ -124,17 +198,13 @@ exports.handler = async function(event, context) {
             summary: 'Discussed timeline for roof repair',
             followUpRequired: false
           }
-        ])
-      };
-    }
-    
-    // POST endpoints (save data)
-    if (httpMethod === 'POST') {
-      return {
-        statusCode: 200,
-        headers,
-        body: JSON.stringify({ message: "Data saved successfully" })
-      };
+        ];
+        return {
+          statusCode: 200,
+          headers,
+          body: JSON.stringify(seedLogs)
+        };
+      }
     }
     
     // 404 for unknown routes

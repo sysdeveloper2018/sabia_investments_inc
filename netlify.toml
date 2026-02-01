@@ -18,7 +18,10 @@
 
 [context.production.environment]
   API_KEY = "AIzaSyCr5lwfg9TVwp8MR4KCvFKrbAoPDn7JmyQ"
+  BREVO_SMTP_SERVER = "smtp-relay.brevo.com"
+  BREVO_SMTP_PORT = "587"
+  BREVO_SMTP_LOGIN = "a14cdc001@smtp-brevo.com"
+  BREVO_SMTP_PASSWORD = "vwSrUD8h9b3Gskag"
 
 [functions]
   directory = "netlify/functions"
-  node_modules = "node_modules"

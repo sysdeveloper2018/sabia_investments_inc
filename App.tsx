@@ -193,16 +193,58 @@ const App: React.FC = () => {
 
   // --- CRUD Handlers (Hybrid: API + Local) ---
 
-  const handleAddProperty = async (p: Property) => {
-    const updated = [...properties, p];
-    setProperties(updated);
-    if (isOffline) {
-        saveLocal('sabia_properties', updated);
-    } else {
-        await fetch(`${SERVER_URL}/properties`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(p) });
+  // Email notification function
+  const sendEmailNotification = async (to: string, subject: string, body: string) => {
+    try {
+      // This would connect to your backend email service
+      const response = await fetch('/api/send-email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ to, subject, body })
+      });
+      
+      if (response.ok) {
+        console.log('Email sent successfully');
+        return true;
+      }
+    } catch (error) {
+      console.error('Email send error:', error);
+    }
+    return false;
+  };
+
+  // Enhanced property handler with email notification
+  const handleAddProperty = async (property: Omit<Property, 'id'>) => {
+    const newProperty: Property = {
+      ...property,
+      id: `prop_${Date.now()}`
+    };
+    
+    setProperties(prev => [...prev, newProperty]);
+    
+    // Send notification email
+    await sendEmailNotification(
+      'your-new-gmail@gmail.com', // Replace with your actual Gmail
+      'New Property Added - Sabia Investments',
+      `A new property has been added:\n\nAddress: ${property.address}\nCity: ${property.city}\nPurchase Price: $${property.purchasePrice?.toLocaleString()}\n\nView details in your dashboard.`
+    );
+    
+    // Save to backend
+    try {
+      const response = await fetch('/api/properties', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newProperty)
+      });
+      
+      if (response.ok) {
+        console.log('Property saved to database');
+      }
+    } catch (error) {
+      console.error('Save error:', error);
     }
   };
-  
+
   const handleUpdateProperty = async (updatedProp: Property) => {
     const updated = properties.map(p => p.id === updatedProp.id ? updatedProp : p);
     setProperties(updated);
