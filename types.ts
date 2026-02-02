@@ -135,6 +135,18 @@ export interface Property {
     imageUrl?: string;
     galleryImages?: string[]; // Array of base64 strings or URLs
     documents?: PropertyDocument[];
+    
+    // Additional Property Information
+    mlsId?: string; // MLS Listing ID
+    parcelId?: string; // Parcel/Tax ID
+    schoolDistrict?: string; // School District
+    hoaFee?: number; // Monthly HOA fee
+    hoaName?: string; // HOA Company/Name
+    electricCompany?: string; // Electric utility provider
+    gasCompany?: string; // Gas utility provider
+    waterCompany?: string; // Water utility provider
+    internetProvider?: string; // Internet service provider
+    additionalFeatures?: string[]; // Additional property features
 }
 
 // -- New Types for Notifications --

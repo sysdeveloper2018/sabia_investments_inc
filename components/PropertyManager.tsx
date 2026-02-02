@@ -104,6 +104,9 @@ export const PropertyManager: React.FC<PropertyManagerProps> = ({ properties, on
   // Repair Detail Input State
   const [repairInput, setRepairInput] = useState({ description: '', cost: '' });
 
+  // Additional Features Input State
+  const [featureInput, setFeatureInput] = useState('');
+
   // New Property State
   const [newProp, setNewProp] = useState<Partial<Property>>({
     type: PropertyType.SINGLE_FAMILY,
@@ -339,6 +342,22 @@ export const PropertyManager: React.FC<PropertyManagerProps> = ({ properties, on
       }));
   };
 
+  const addFeature = () => {
+    if (!featureInput.trim()) return;
+    setNewProp(prev => ({
+        ...prev,
+        additionalFeatures: [...(prev.additionalFeatures || []), featureInput.trim()]
+    }));
+    setFeatureInput('');
+  };
+
+  const removeFeature = (index: number) => {
+    setNewProp(prev => ({
+        ...prev,
+        additionalFeatures: prev.additionalFeatures?.filter((_, i) => i !== index)
+    }));
+  };
+
   // --- SMART DROPBOX HANDLER ---
   const handleDropboxClick = async (e?: React.MouseEvent) => {
       if (e) e.stopPropagation();
@@ -385,7 +404,8 @@ export const PropertyManager: React.FC<PropertyManagerProps> = ({ properties, on
           ...prop, 
           improvements: prop.improvements || [], 
           repairDetails: prop.repairDetails || [],
-          customLinks: prop.customLinks || []
+          customLinks: prop.customLinks || [],
+          additionalFeatures: prop.additionalFeatures || []
       });
       setIsFormOpen(true);
       setExpandedSections({
@@ -394,9 +414,9 @@ export const PropertyManager: React.FC<PropertyManagerProps> = ({ properties, on
           renovation: true, 
           details: false,
           exterior: false,
-          systems: false,
+          systems: true, // Open utilities section
           land: false,
-          improvements: false,
+          improvements: true, // Open additional features
           images: true, // Auto open images since we might be editing them
           documents: false,
           links: true
@@ -416,11 +436,13 @@ export const PropertyManager: React.FC<PropertyManagerProps> = ({ properties, on
         documents: [], 
         improvements: [],
         repairDetails: [],
-        customLinks: []
+        customLinks: [],
+        additionalFeatures: []
     });
     setImprovementInput('');
     setRepairInput({ description: '', cost: '' });
     setLinkInput({ title: '', url: '' });
+    setFeatureInput('');
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -915,7 +937,7 @@ export const PropertyManager: React.FC<PropertyManagerProps> = ({ properties, on
                     {/* Systems */}
                     <div className="bg-slate-900 rounded-xl border border-slate-800 p-4">
                          <h3 className="text-xs font-bold text-vestra-gold uppercase mb-3 border-b border-slate-800 pb-2 flex items-center gap-2">
-                             <Wrench size={14} /> Systems
+                             <Wrench size={14} /> Systems & Utilities
                          </h3>
                          <div className="space-y-3">
                             <div className="grid grid-cols-2 gap-2">
@@ -925,6 +947,34 @@ export const PropertyManager: React.FC<PropertyManagerProps> = ({ properties, on
                             <div className="grid grid-cols-2 gap-2">
                                 <DenseField label="Water" value={prop.waterSource} />
                                 <DenseField label="Sewer" value={prop.sewer} />
+                            </div>
+                            <div className="grid grid-cols-2 gap-2">
+                                <DenseField label="Electric" value={prop.electricCompany} />
+                                <DenseField label="Gas" value={prop.gasCompany} />
+                            </div>
+                            <div className="grid grid-cols-2 gap-2">
+                                <DenseField label="Water Utility" value={prop.waterCompany} />
+                                <DenseField label="Internet" value={prop.internetProvider} />
+                            </div>
+                         </div>
+                    </div>
+
+                    {/* Property Identifiers */}
+                    <div className="bg-slate-900 rounded-xl border border-slate-800 p-4">
+                         <h3 className="text-xs font-bold text-vestra-gold uppercase mb-3 border-b border-slate-800 pb-2 flex items-center gap-2">
+                             <Landmark size={14} /> Identifiers & Fees
+                         </h3>
+                         <div className="space-y-3">
+                            <div className="grid grid-cols-2 gap-2">
+                                <DenseField label="MLS ID" value={prop.mlsId} />
+                                <DenseField label="Parcel ID" value={prop.parcelId} />
+                            </div>
+                            <div className="grid grid-cols-2 gap-2">
+                                <DenseField label="HOA Fee" value={prop.hoaFee ? formatCurrency(prop.hoaFee) + '/mo' : ''} />
+                                <DenseField label="HOA Company" value={prop.hoaName} />
+                            </div>
+                            <div className="grid grid-cols-1 gap-2">
+                                <DenseField label="School District" value={prop.schoolDistrict} />
                             </div>
                          </div>
                     </div>
@@ -969,6 +1019,24 @@ export const PropertyManager: React.FC<PropertyManagerProps> = ({ properties, on
                                 ))
                             ) : (
                                 <span className="text-xs text-slate-500 italic">None recorded</span>
+                            )}
+                         </div>
+                     </div>
+
+                     {/* Additional Features */}
+                     <div className="bg-slate-900 rounded-xl border border-slate-800 p-4">
+                         <h3 className="text-xs font-bold text-vestra-gold uppercase mb-3 border-b border-slate-800 pb-2 flex items-center gap-2">
+                             <Calculator size={14} /> Additional Features
+                         </h3>
+                         <div className="flex flex-wrap gap-2">
+                            {prop.additionalFeatures && prop.additionalFeatures.length > 0 ? (
+                                prop.additionalFeatures.map((feature, i) => (
+                                    <span key={i} className="text-xs bg-slate-800 text-slate-300 px-2 py-1 rounded border border-slate-700">
+                                        {feature}
+                                    </span>
+                                ))
+                            ) : (
+                                <span className="text-xs text-slate-500 italic">No additional features</span>
                             )}
                          </div>
                      </div>
@@ -1187,6 +1255,14 @@ export const PropertyManager: React.FC<PropertyManagerProps> = ({ properties, on
                     <label className={labelClass}>Listing / Zillow URL</label>
                     <input name="listingUrl" placeholder="https://..." className={inputClass} onChange={handleInputChange} value={newProp.listingUrl || ''} />
                   </div>
+                  <div>
+                    <label className={labelClass}>MLS ID</label>
+                    <input name="mlsId" placeholder="MLS #123456" className={inputClass} onChange={handleInputChange} value={newProp.mlsId || ''} />
+                  </div>
+                  <div>
+                    <label className={labelClass}>Parcel / Tax ID</label>
+                    <input name="parcelId" placeholder="12-345-678" className={inputClass} onChange={handleInputChange} value={newProp.parcelId || ''} />
+                  </div>
                 </div>
               )}
             </div>
@@ -1238,6 +1314,18 @@ export const PropertyManager: React.FC<PropertyManagerProps> = ({ properties, on
                   <div>
                     <label className={labelClass}>Annual Insurance ($)</label>
                     <input type="number" name="insuranceCost" className={inputClass} onChange={handleInputChange} value={newProp.insuranceCost || ''} />
+                  </div>
+                  <div>
+                    <label className={labelClass}>Monthly HOA Fee ($)</label>
+                    <input type="number" name="hoaFee" className={inputClass} onChange={handleInputChange} value={newProp.hoaFee || ''} />
+                  </div>
+                  <div>
+                    <label className={labelClass}>HOA Company</label>
+                    <input name="hoaName" placeholder="HOA Management Co." className={inputClass} onChange={handleInputChange} value={newProp.hoaName || ''} />
+                  </div>
+                  <div>
+                    <label className={labelClass}>School District</label>
+                    <input name="schoolDistrict" placeholder="District Name" className={inputClass} onChange={handleInputChange} value={newProp.schoolDistrict || ''} />
                   </div>
                 </div>
               )}
@@ -1456,6 +1544,88 @@ export const PropertyManager: React.FC<PropertyManagerProps> = ({ properties, on
                                 <button 
                                     type="button" 
                                     onClick={() => removeLink(link.id)} 
+                                    className="text-slate-600 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-opacity"
+                                >
+                                    <Trash2 size={16} />
+                                </button>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+              )}
+            </div>
+
+            {/* Section 6: Utilities */}
+            <div className="bg-slate-900">
+              <button type="button" onClick={() => toggleSection('systems')} className={sectionBtnClass}>
+                <div className={sectionTitleClass}><Wrench size={18} className="text-vestra-gold" /> Utilities & Systems</div>
+                {expandedSections.systems ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+              </button>
+              
+              {expandedSections.systems && (
+                <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className={labelClass}>Electric Company</label>
+                    <input name="electricCompany" placeholder="e.g. Duke Energy" className={inputClass} onChange={handleInputChange} value={newProp.electricCompany || ''} />
+                  </div>
+                  <div>
+                    <label className={labelClass}>Gas Company</label>
+                    <input name="gasCompany" placeholder="e.g. Gas Company" className={inputClass} onChange={handleInputChange} value={newProp.gasCompany || ''} />
+                  </div>
+                  <div>
+                    <label className={labelClass}>Water Company</label>
+                    <input name="waterCompany" placeholder="e.g. Water Dept" className={inputClass} onChange={handleInputChange} value={newProp.waterCompany || ''} />
+                  </div>
+                  <div>
+                    <label className={labelClass}>Internet Provider</label>
+                    <input name="internetProvider" placeholder="e.g. Comcast, AT&T" className={inputClass} onChange={handleInputChange} value={newProp.internetProvider || ''} />
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Section 7: Additional Features */}
+            <div className="bg-slate-900">
+              <button type="button" onClick={() => toggleSection('improvements')} className={sectionBtnClass}>
+                <div className={sectionTitleClass}><Hammer size={18} className="text-vestra-gold" /> Additional Features</div>
+                {expandedSections.improvements ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+              </button>
+              
+              {expandedSections.improvements && (
+                <div className="p-6">
+                    <div className="bg-slate-800/50 p-4 rounded-lg border border-slate-700 mb-6">
+                        <h4 className="text-sm font-bold text-white mb-3">Add Feature</h4>
+                        <div className="flex flex-col md:flex-row gap-3 items-end">
+                             <div className="flex-1 w-full">
+                                <label className={labelClass}>Feature Description</label>
+                                <input 
+                                    placeholder="e.g. Smart Home Technology, Solar Panels" 
+                                    className={inputClass}
+                                    value={featureInput}
+                                    onChange={(e) => setFeatureInput(e.target.value)}
+                                    onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), addFeature())}
+                                />
+                             </div>
+                             <button 
+                                type="button" 
+                                onClick={addFeature}
+                                className="w-full md:w-auto px-4 py-2 bg-vestra-gold text-slate-900 rounded-md hover:bg-yellow-500 transition-colors flex items-center justify-center gap-2 font-bold"
+                             >
+                                <Plus size={18} /> Add
+                             </button>
+                        </div>
+                    </div>
+
+                    <div className="space-y-2">
+                        {(!newProp.additionalFeatures || newProp.additionalFeatures.length === 0) && (
+                            <p className="text-slate-500 text-sm italic text-center py-4">No additional features added.</p>
+                        )}
+                        {newProp.additionalFeatures?.map((feature, idx) => (
+                            <div key={idx} className="flex justify-between items-center bg-slate-800 p-3 rounded border border-slate-700 hover:border-slate-600 transition-colors group">
+                                <span className="text-slate-200 text-sm font-medium">{feature}</span>
+                                <button 
+                                    type="button" 
+                                    onClick={() => removeFeature(idx)} 
                                     className="text-slate-600 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-opacity"
                                 >
                                     <Trash2 size={16} />
