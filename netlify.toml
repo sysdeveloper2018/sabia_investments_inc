@@ -7,6 +7,11 @@
   NODE_VERSION = "18"
 
 [[redirects]]
+  from = "/api/send-email"
+  to = "/.netlify/functions/sendemail"
+  status = 200
+
+[[redirects]]
   from = "/api/*"
   to = "/.netlify/functions/:splat"
   status = 200
