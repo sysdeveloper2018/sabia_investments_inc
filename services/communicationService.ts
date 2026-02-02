@@ -41,31 +41,37 @@ export const captureElementAsImage = async (element: HTMLElement | null): Promis
  */
 export const sendEmailService = async (payload: EmailPayload): Promise<boolean> => {
     console.log("--- EMAIL SERVICE INITIATED ---");
+    console.log("To:", payload.to);
+    console.log("Subject:", payload.subject);
+    console.log("Has attachment:", !!payload.attachment);
     
     try {
-        // Create FormData for file attachment support
-        const formData = new FormData();
-        formData.append('to', payload.to);
-        formData.append('subject', payload.subject);
-        formData.append('body', payload.body);
-        
-        // Add attachment if provided
-        if (payload.attachment) {
-            formData.append('attachment', payload.attachment, `report-${Date.now()}.pdf`);
-        }
-
-        // Attempt to hit the backend API
+        // Send as JSON for now (simpler and more reliable)
         const response = await fetch(`${API_BASE_URL}/api/send-email`, {
             method: 'POST',
-            body: formData // Send as FormData instead of JSON
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                to: payload.to,
+                subject: payload.subject,
+                body: payload.body
+                // Note: Attachment temporarily disabled for debugging
+            })
         });
 
-        if (response.ok) {
+        const result = await response.json();
+        console.log("--- EMAIL RESPONSE ---", result);
+
+        if (response.ok && result.success) {
              console.log("--- EMAIL SENT VIA BACKEND ---");
              return true;
+        } else {
+            console.error("--- EMAIL FAILED ---", result.error);
+            throw new Error(result.error || "Email sending failed");
         }
-        throw new Error("Backend not available");
     } catch (e) {
+        console.error("--- EMAIL SERVICE ERROR ---", e);
         // Fallback to simulation
         console.warn("Backend unavailable, using simulation.", e);
         return new Promise((resolve) => {

@@ -1,6 +1,5 @@
 // Netlify Function for Sending Emails via Brevo
 const nodemailer = require('nodemailer');
-const formidable = require('formidable');
 
 exports.handler = async function(event, context) {
   
@@ -22,32 +21,63 @@ exports.handler = async function(event, context) {
   }
   
   try {
-    let to, subject, body, attachment;
+    // Parse JSON body
+    let to, subject, body;
     
-    // Handle both JSON and FormData requests
-    if (event.headers['content-type'] && event.headers['content-type'].includes('multipart/form-data')) {
-      // Parse FormData
-      const form = new formidable.IncomingForm();
-      const [fields, files] = await form.parse(event);
-      
-      to = fields.to?.[0];
-      subject = fields.subject?.[0];
-      body = fields.body?.[0];
-      attachment = files.attachment?.[0];
-    } else {
-      // Parse JSON
-      const { to: emailTo, subject: emailSubject, body: emailBody } = JSON.parse(event.body);
-      to = emailTo;
-      subject = emailSubject;
-      body = emailBody;
+    try {
+      const parsedBody = JSON.parse(event.body);
+      to = parsedBody.to;
+      subject = parsedBody.subject;
+      body = parsedBody.body;
+    } catch (parseError) {
+      console.error('JSON parse error:', parseError);
+      return {
+        statusCode: 400,
+        headers,
+        body: JSON.stringify({ 
+          success: false, 
+          error: 'Invalid JSON in request body',
+          details: parseError.message 
+        })
+      };
+    }
+    
+    // Validate required fields
+    if (!to || !subject || !body) {
+      return {
+        statusCode: 400,
+        headers,
+        body: JSON.stringify({ 
+          success: false, 
+          error: 'Missing required fields: to, subject, body',
+          received: { to: !!to, subject: !!subject, body: !!body }
+        })
+      };
     }
     
     console.log('--- EMAIL REQUEST ---');
     console.log('To:', to);
     console.log('Subject:', subject);
     console.log('Body length:', body?.length || 0);
-    if (attachment) {
-      console.log('Attachment:', attachment.originalFilename, `(${attachment.size} bytes)`);
+    console.log('Brevo SMTP Server:', process.env.BREVO_SMTP_SERVER);
+    console.log('Brevo SMTP Login:', process.env.BREVO_SMTP_LOGIN);
+    
+    // Check if environment variables are set
+    if (!process.env.BREVO_SMTP_SERVER || !process.env.BREVO_SMTP_LOGIN || !process.env.BREVO_SMTP_PASSWORD) {
+      console.error('Missing Brevo environment variables');
+      return {
+        statusCode: 500,
+        headers,
+        body: JSON.stringify({ 
+          success: false, 
+          error: 'Server configuration error: Missing Brevo credentials',
+          details: {
+            hasServer: !!process.env.BREVO_SMTP_SERVER,
+            hasLogin: !!process.env.BREVO_SMTP_LOGIN,
+            hasPassword: !!process.env.BREVO_SMTP_PASSWORD
+          }
+        })
+      };
     }
     
     // Create transporter (Brevo SMTP)
@@ -58,7 +88,9 @@ exports.handler = async function(event, context) {
       auth: {
         user: process.env.BREVO_SMTP_LOGIN,     // Your Brevo SMTP login
         pass: process.env.BREVO_SMTP_PASSWORD  // Your Brevo SMTP password
-      }
+      },
+      debug: true, // Enable debug logging
+      logger: true  // Enable logger
     });
     
     // Prepare email options
@@ -70,19 +102,14 @@ exports.handler = async function(event, context) {
       html: `<p>${body.replace(/\n/g, '<br>')}</p>`
     };
     
-    // Add attachment if provided
-    if (attachment) {
-      mailOptions.attachments = [{
-        filename: attachment.originalFilename || `report-${Date.now()}.pdf`,
-        content: attachment.content
-      }];
-    }
+    console.log('Attempting to send email...');
     
     // Send email
     const info = await transporter.sendMail(mailOptions);
     
     console.log('--- EMAIL SENT SUCCESSFULLY ---');
     console.log('Message ID:', info.messageId);
+    console.log('Response:', info.response);
     
     return {
       statusCode: 200,
@@ -90,19 +117,22 @@ exports.handler = async function(event, context) {
       body: JSON.stringify({ 
         success: true, 
         message: 'Email sent successfully',
-        messageId: info.messageId 
+        messageId: info.messageId,
+        response: info.response
       })
     };
     
   } catch (error) {
     console.error('Email send error:', error);
+    console.error('Error stack:', error.stack);
     return {
       statusCode: 500,
       headers,
       body: JSON.stringify({ 
         success: false, 
         error: 'Failed to send email',
-        details: error.message 
+        details: error.message,
+        stack: error.stack
       })
     };
   }
