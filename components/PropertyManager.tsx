@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Property, PropertyType, PropertyDocument, LinkItem } from '../types';
-import { ChevronDown, ChevronUp, Plus, MapPin, DollarSign, Home, Download, Image as ImageIcon, Upload, X, Pencil, Wrench, Trees, FileSpreadsheet, CheckCircle, Trash2, AlertTriangle, FileText, Map, Landmark, Hammer, Calculator, ArrowLeft, ExternalLink, Eye, Loader2, Clock, Link as LinkIcon, MessageSquare, FolderInput, StopCircle, ChevronLeft, ChevronRight, Maximize2, Box } from 'lucide-react';
+import { ChevronDown, ChevronUp, Plus, MapPin, DollarSign, Home, Download, Image as ImageIcon, Upload, X, Pencil, Wrench, Trees, FileSpreadsheet, CheckCircle, Trash2, AlertTriangle, FileText, Map, Landmark, Hammer, Calculator, ArrowLeft, ExternalLink, Eye, Loader2, Clock, Link as LinkIcon, MessageSquare, FolderInput, StopCircle, ChevronLeft, ChevronRight, Maximize2, Box, Database } from 'lucide-react';
 import { downloadCSV, parseCSV, processImage, formatCurrency } from '../utils';
 
 interface PropertyManagerProps {
@@ -307,8 +307,25 @@ export const PropertyManager: React.FC<PropertyManagerProps> = ({ properties, on
   const removeLink = (id: string) => {
     setNewProp(prev => ({
         ...prev,
-        customLinks: prev.customLinks?.filter(l => l.id !== id)
+        customLinks: prev.customLinks?.filter(link => link.id !== id)
     }));
+  };
+
+  const addDropboxLink = () => {
+    if (!linkInput.url.trim()) return;
+    
+    const dropboxLink: LinkItem = {
+        id: Date.now().toString(),
+        title: 'DBX_Images',
+        url: linkInput.url.trim()
+    };
+    
+    setNewProp(prev => ({
+        ...prev,
+        customLinks: [...(prev.customLinks || []), dropboxLink]
+    }));
+    
+    setLinkInput({ title: '', url: '' });
   };
 
   const addRepairItem = () => {
@@ -1054,9 +1071,14 @@ export const PropertyManager: React.FC<PropertyManagerProps> = ({ properties, on
                                         href={link.url} 
                                         target="_blank" 
                                         rel="noopener noreferrer"
-                                        className="text-xs bg-slate-800 hover:bg-slate-700 text-vestra-gold border border-slate-700 px-3 py-1.5 rounded flex items-center gap-1 transition-colors"
+                                        className={`text-xs border px-3 py-1.5 rounded flex items-center gap-1 transition-colors ${
+                                            link.title === 'DBX_Images' 
+                                                ? 'bg-blue-600 hover:bg-blue-500 text-white border-blue-500' 
+                                                : 'bg-slate-800 hover:bg-slate-700 border border-slate-700 text-vestra-gold'
+                                        }`}
                                     >
-                                        <ExternalLink size={10} /> {link.title}
+                                        {link.title === 'DBX_Images' ? <Database size={10} /> : <ExternalLink size={10} />}
+                                        {link.title}
                                     </a>
                                 ))}
                             </div>
@@ -1529,6 +1551,31 @@ export const PropertyManager: React.FC<PropertyManagerProps> = ({ properties, on
                         </div>
                     </div>
 
+                    {/* Quick Dropbox Link */}
+                    <div className="bg-slate-800/50 p-4 rounded-lg border border-slate-700 mb-6">
+                        <h4 className="text-sm font-bold text-white mb-3">Quick Dropbox Link</h4>
+                        <div className="flex flex-col md:flex-row gap-3 items-end">
+                             <div className="flex-1 w-full">
+                                <label className={labelClass}>Dropbox URL</label>
+                                <input 
+                                    placeholder="https://www.dropbox.com/s/..." 
+                                    className={inputClass}
+                                    value={linkInput.url}
+                                    onChange={(e) => setLinkInput({...linkInput, url: e.target.value, title: 'DBX_Images'})}
+                                    onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), addDropboxLink())}
+                                />
+                             </div>
+                             <button 
+                                type="button" 
+                                onClick={addDropboxLink}
+                                className="w-full md:w-auto px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-500 transition-colors flex items-center justify-center gap-2 font-bold"
+                             >
+                                <Database size={18} /> Add Dropbox
+                             </button>
+                        </div>
+                        <p className="text-xs text-slate-500 mt-2">Quickly add Dropbox image links - will be labeled as "DBX_Images"</p>
+                    </div>
+
                     <div className="space-y-2">
                         {(!newProp.customLinks || newProp.customLinks.length === 0) && (
                             <p className="text-slate-500 text-sm italic text-center py-4">No links added.</p>
@@ -1961,9 +2008,14 @@ export const PropertyManager: React.FC<PropertyManagerProps> = ({ properties, on
                                 target="_blank" 
                                 rel="noopener noreferrer"
                                 onClick={(e) => e.stopPropagation()}
-                                className="text-[10px] bg-slate-800 hover:bg-slate-700 border border-slate-700 text-vestra-gold px-2 py-1 rounded flex items-center gap-1 transition-colors"
+                                className={`text-[10px] border px-2 py-1 rounded flex items-center gap-1 transition-colors ${
+                                    link.title === 'DBX_Images' 
+                                        ? 'bg-blue-600 hover:bg-blue-500 text-white border-blue-500' 
+                                        : 'bg-slate-800 hover:bg-slate-700 border border-slate-700 text-vestra-gold'
+                                }`}
                             >
-                                <LinkIcon size={10} /> {link.title}
+                                {link.title === 'DBX_Images' ? <Database size={10} /> : <LinkIcon size={10} />}
+                                {link.title}
                             </a>
                         ))}
                     </div>
