@@ -471,6 +471,61 @@ app.post('/api/logs', (req, res) => {
     });
 });
 
+// Email endpoint with PDF attachment support
+app.post('/api/send-email', async (req, res) => {
+    try {
+        let to, subject, body, attachment;
+        
+        // Handle both JSON and FormData requests
+        if (req.is('multipart/form-data')) {
+            // FormData request (with PDF attachment)
+            const formidable = require('formidable');
+            const form = new formidable.IncomingForm();
+            
+            const [fields, files] = await form.parse(req);
+            to = fields.to?.[0];
+            subject = fields.subject?.[0];
+            body = fields.body?.[0];
+            attachment = files.attachment?.[0];
+        } else {
+            // JSON request (without attachment)
+            ({ to, subject, body } = req.body);
+        }
+        
+        // In production, this would use the Netlify function with Brevo
+        // For local development, we'll simulate the email sending
+        console.log('--- EMAIL REQUEST ---');
+        console.log('To:', to);
+        console.log('Subject:', subject);
+        console.log('Body:', body?.substring(0, 100) + '...');
+        if (attachment) {
+            console.log('Attachment:', attachment.originalFilename, `(${attachment.size} bytes)`);
+        }
+        console.log('--- END EMAIL REQUEST ---');
+        
+        // Simulate email sending delay
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        
+        res.json({ 
+            success: true, 
+            message: attachment ? 
+                `Email with PDF attachment sent successfully (simulated in development)` :
+                'Email sent successfully (simulated in development)',
+            to: to,
+            subject: subject,
+            attachment: attachment ? attachment.originalFilename : null
+        });
+        
+    } catch (error) {
+        console.error('Email send error:', error);
+        res.status(500).json({ 
+            success: false, 
+            error: 'Failed to send email',
+            details: error.message 
+        });
+    }
+});
+
 // Global Error Handler
 app.use((err, req, res, next) => {
     console.error("Server Error:", err);

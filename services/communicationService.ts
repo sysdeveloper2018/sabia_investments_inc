@@ -36,23 +36,28 @@ export const captureElementAsImage = async (element: HTMLElement | null): Promis
 };
 
 /**
- * Sends data to a backend API for emailing.
- * Provider suggestions: SendGrid, AWS SES, Mailgun.
+ * Sends data to a backend API for emailing with PDF attachment support.
+ * Provider suggestions: SendGrid, AWS SES, Mailgun, Brevo.
  */
 export const sendEmailService = async (payload: EmailPayload): Promise<boolean> => {
     console.log("--- EMAIL SERVICE INITIATED ---");
     
     try {
+        // Create FormData for file attachment support
+        const formData = new FormData();
+        formData.append('to', payload.to);
+        formData.append('subject', payload.subject);
+        formData.append('body', payload.body);
+        
+        // Add attachment if provided
+        if (payload.attachment) {
+            formData.append('attachment', payload.attachment, `report-${Date.now()}.pdf`);
+        }
+
         // Attempt to hit the backend API
         const response = await fetch(`${API_BASE_URL}/api/send-email`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                to: payload.to,
-                subject: payload.subject,
-                body: payload.body,
-                // Note: Sending blobs/files often requires FormData, not JSON, in real implementations
-            })
+            body: formData // Send as FormData instead of JSON
         });
 
         if (response.ok) {
@@ -65,7 +70,7 @@ export const sendEmailService = async (payload: EmailPayload): Promise<boolean> 
         console.warn("Backend unavailable, using simulation.", e);
         return new Promise((resolve) => {
             setTimeout(() => {
-                console.log(`(SIMULATED) Email sent to ${payload.to}`);
+                console.log(`(SIMULATED) Email sent to ${payload.to}${payload.attachment ? ' with PDF attachment' : ''}`);
                 resolve(true);
             }, 1500);
         });
