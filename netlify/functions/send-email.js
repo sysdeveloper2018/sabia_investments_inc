@@ -1,8 +1,8 @@
-// Netlify Function for Sending Emails via Gmail
+// Netlify Function for Sending Emails via Brevo
 const nodemailer = require('nodemailer');
+const formidable = require('formidable');
 
 exports.handler = async function(event, context) {
-  const { to, subject, body } = JSON.parse(event.body);
   
   // Enable CORS
   const headers = {
@@ -22,10 +22,38 @@ exports.handler = async function(event, context) {
   }
   
   try {
+    let to, subject, body, attachment;
+    
+    // Handle both JSON and FormData requests
+    if (event.headers['content-type'] && event.headers['content-type'].includes('multipart/form-data')) {
+      // Parse FormData
+      const form = new formidable.IncomingForm();
+      const [fields, files] = await form.parse(event);
+      
+      to = fields.to?.[0];
+      subject = fields.subject?.[0];
+      body = fields.body?.[0];
+      attachment = files.attachment?.[0];
+    } else {
+      // Parse JSON
+      const { to: emailTo, subject: emailSubject, body: emailBody } = JSON.parse(event.body);
+      to = emailTo;
+      subject = emailSubject;
+      body = emailBody;
+    }
+    
+    console.log('--- EMAIL REQUEST ---');
+    console.log('To:', to);
+    console.log('Subject:', subject);
+    console.log('Body length:', body?.length || 0);
+    if (attachment) {
+      console.log('Attachment:', attachment.originalFilename, `(${attachment.size} bytes)`);
+    }
+    
     // Create transporter (Brevo SMTP)
     const transporter = nodemailer.createTransporter({
       host: process.env.BREVO_SMTP_SERVER,
-      port: process.env.BREVO_SMTP_PORT,
+      port: parseInt(process.env.BREVO_SMTP_PORT || '587'),
       secure: false, // true for 465, false for other ports
       auth: {
         user: process.env.BREVO_SMTP_LOGIN,     // Your Brevo SMTP login
@@ -33,14 +61,28 @@ exports.handler = async function(event, context) {
       }
     });
     
-    // Send email
-    const info = await transporter.sendMail({
+    // Prepare email options
+    const mailOptions = {
       from: process.env.BREVO_SMTP_LOGIN,
       to: to,
       subject: subject,
       text: body,
       html: `<p>${body.replace(/\n/g, '<br>')}</p>`
-    });
+    };
+    
+    // Add attachment if provided
+    if (attachment) {
+      mailOptions.attachments = [{
+        filename: attachment.originalFilename || `report-${Date.now()}.pdf`,
+        content: attachment.content
+      }];
+    }
+    
+    // Send email
+    const info = await transporter.sendMail(mailOptions);
+    
+    console.log('--- EMAIL SENT SUCCESSFULLY ---');
+    console.log('Message ID:', info.messageId);
     
     return {
       statusCode: 200,
