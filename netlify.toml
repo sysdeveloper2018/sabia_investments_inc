@@ -8,7 +8,7 @@
 
 [[redirects]]
   from = "/api/send-email"
-  to = "/.netlify/functions/email"
+  to = "/.netlify/functions/send-email"
   status = 200
 
 [[redirects]]
