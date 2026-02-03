@@ -934,6 +934,18 @@ export const PropertyManager: React.FC<PropertyManagerProps> = ({ properties, on
                              <DenseField label="Flooring" value={prop.flooring} />
                              <DenseField label="Foundation" value={prop.constructionMaterials} />
                          </div>
+                         
+                         {/* Parcel ID Section */}
+                         {prop.parcelId && (
+                             <div className="mt-4 pt-4 border-t border-slate-800">
+                                 <div className="flex items-center justify-between">
+                                     <span className="text-xs font-bold text-slate-500 uppercase">Parcel ID</span>
+                                     <span className="font-mono text-sm text-vestra-gold bg-slate-800 px-3 py-2 rounded border border-slate-700">
+                                         {prop.parcelId}
+                                     </span>
+                                 </div>
+                             </div>
+                         )}
                     </div>
 
                     {/* Exterior Specs */}
@@ -2037,6 +2049,16 @@ export const PropertyManager: React.FC<PropertyManagerProps> = ({ properties, on
                     <span>{prop.beds || '-'}bd / {prop.baths || '-'}ba</span>
                     <span>{prop.yearBuilt || 'N/A'}</span>
                 </div>
+
+                {/* Parcel ID Display */}
+                {prop.parcelId && (
+                    <div className="mt-3 pt-3 border-t border-slate-800">
+                        <div className="flex items-center justify-between text-xs">
+                            <span className="text-slate-500 uppercase">Parcel ID</span>
+                            <span className="font-mono text-vestra-gold bg-slate-800 px-2 py-1 rounded">{prop.parcelId}</span>
+                        </div>
+                    </div>
+                )}
                 </div>
             </div>
             );
