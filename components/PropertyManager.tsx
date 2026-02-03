@@ -936,16 +936,14 @@ export const PropertyManager: React.FC<PropertyManagerProps> = ({ properties, on
                          </div>
                          
                          {/* Parcel ID Section */}
-                         {prop.parcelId && (
-                             <div className="mt-4 pt-4 border-t border-slate-800">
-                                 <div className="flex items-center justify-between">
-                                     <span className="text-xs font-bold text-slate-500 uppercase">Parcel ID</span>
-                                     <span className="font-mono text-sm text-vestra-gold bg-slate-800 px-3 py-2 rounded border border-slate-700">
-                                         {prop.parcelId}
-                                     </span>
-                                 </div>
+                         <div className="mt-4 pt-4 border-t border-slate-800">
+                             <div className="flex items-center justify-between">
+                                 <span className="text-xs font-bold text-slate-500 uppercase">Parcel ID</span>
+                                 <span className={`font-mono text-sm bg-slate-800 px-3 py-2 rounded border border-slate-700 ${prop.parcelId ? 'text-vestra-gold' : 'text-slate-600'}`}>
+                                     {prop.parcelId || 'Not Set'}
+                                 </span>
                              </div>
-                         )}
+                         </div>
                     </div>
 
                     {/* Exterior Specs */}
@@ -2051,11 +2049,18 @@ export const PropertyManager: React.FC<PropertyManagerProps> = ({ properties, on
                 </div>
 
                 {/* Parcel ID Display */}
-                {prop.parcelId && (
+                {prop.parcelId ? (
                     <div className="mt-3 pt-3 border-t border-slate-800">
                         <div className="flex items-center justify-between text-xs">
                             <span className="text-slate-500 uppercase">Parcel ID</span>
                             <span className="font-mono text-vestra-gold bg-slate-800 px-2 py-1 rounded">{prop.parcelId}</span>
+                        </div>
+                    </div>
+                ) : (
+                    <div className="mt-3 pt-3 border-t border-slate-800">
+                        <div className="flex items-center justify-between text-xs">
+                            <span className="text-slate-500 uppercase">Parcel ID</span>
+                            <span className="font-mono text-slate-600 bg-slate-800 px-2 py-1 rounded">Not Set</span>
                         </div>
                     </div>
                 )}
