@@ -46,40 +46,62 @@ export const sendEmailService = async (payload: EmailPayload): Promise<boolean> 
     console.log("Has attachment:", !!payload.attachment);
     
     try {
-        // TEMPORARY WORKAROUND: Use EmailJS or similar service
-        // This bypasses Netlify functions until we fix the deployment issue
-        
-        // For now, let's use a simple email service that works with fetch
-        const emailData = {
-            service_id: 'your_service_id', // You'll need to set this up
-            template_id: 'your_template_id', // You'll need to set this up
-            user_id: 'your_user_id', // You'll need to set this up
-            template_params: {
-                to_email: payload.to,
-                subject: payload.subject,
-                message: payload.body,
-                from_name: 'Sabia Investments Properties Inc'
-            }
+        // SOLUTION 1: Try Resend (modern email service)
+        const resendData = {
+            from: 'onboarding@resend.dev', // Resend's default sender
+            to: [payload.to],
+            subject: payload.subject,
+            html: `<p>${payload.body.replace(/\n/g, '<br>')}</p>`
         };
         
-        // Try EmailJS (you'll need to sign up for free account)
-        const response = await fetch('https://api.emailjs.com/api/v1.0/email/send', {
+        const response = await fetch('https://api.resend.com/emails', {
             method: 'POST',
             headers: {
+                'Authorization': 're_123456789', // You'll need to get a real API key
                 'Content-Type': 'application/json'
             },
-            body: JSON.stringify(emailData)
+            body: JSON.stringify(resendData)
         });
         
         if (response.ok) {
-            console.log("--- EMAIL SENT VIA EMAILJS ---");
+            console.log("--- EMAIL SENT VIA RESEND ---");
             return true;
         }
         
-        throw new Error("EmailJS service failed");
+        throw new Error("Resend service failed");
         
     } catch (e) {
         console.error("--- EMAIL SERVICE ERROR ---", e);
+        
+        // SOLUTION 2: Try EmailJS as backup
+        try {
+            const emailJSData = {
+                service_id: 'service_yourid',
+                template_id: 'template_yourid',
+                user_id: 'user_yourid',
+                template_params: {
+                    to_email: payload.to,
+                    subject: payload.subject,
+                    message: payload.body,
+                    from_name: 'Sabia Investments Properties Inc'
+                }
+            };
+            
+            const emailJSResponse = await fetch('https://api.emailjs.com/api/v1.0/email/send', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(emailJSData)
+            });
+            
+            if (emailJSResponse.ok) {
+                console.log("--- EMAIL SENT VIA EMAILJS ---");
+                return true;
+            }
+        } catch (emailJSError) {
+            console.error("EmailJS also failed:", emailJSError);
+        }
         
         // FINAL FALLBACK: Show user what would be sent
         console.log("--- EMAIL CONTENT (FOR MANUAL SENDING) ---");
@@ -88,8 +110,19 @@ export const sendEmailService = async (payload: EmailPayload): Promise<boolean> 
         console.log("Body:", payload.body);
         console.log("--- END EMAIL CONTENT ---");
         
-        // Return true so UI shows success, but user needs to manually send
-        alert(`Email prepared!\n\nTo: ${payload.to}\nSubject: ${payload.subject}\n\nPlease copy this content and send manually from your email client until we fix the technical issue.`);
+        // Create a mailto link for easy sending
+        const mailtoLink = `mailto:${payload.to}?subject=${encodeURIComponent(payload.subject)}&body=${encodeURIComponent(payload.body)}`;
+        
+        // Show user the content and offer to open email client
+        const shouldOpenEmail = confirm(`Email prepared!\n\nTo: ${payload.to}\nSubject: ${payload.subject}\n\nClick OK to open your email client, or Cancel to copy manually.`);
+        
+        if (shouldOpenEmail) {
+            window.open(mailtoLink, '_blank');
+        } else {
+            // Copy to clipboard
+            navigator.clipboard.writeText(`To: ${payload.to}\nSubject: ${payload.subject}\n\n${payload.body}`);
+            alert('Email content copied to clipboard! Paste it in your email client.');
+        }
         
         return true;
     }
