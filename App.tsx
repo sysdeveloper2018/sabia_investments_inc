@@ -177,6 +177,15 @@ const App: React.FC = () => {
   useEffect(() => {
     fetchData();
     
+    // Add a timeout fallback - if loading takes more than 10 seconds, force it to complete
+    const loadingTimeout = setTimeout(() => {
+      if (isLoading) {
+        console.warn("Loading timeout - forcing app to show");
+        setIsLoading(false);
+        setServerCheckComplete(true);
+      }
+    }, 10000);
+    
     // Auto-reconnect polling every 30 seconds if offline
     const interval = setInterval(() => {
         if (isOffline) {
@@ -189,8 +198,11 @@ const App: React.FC = () => {
         }
     }, 30000);
 
-    return () => clearInterval(interval);
-  }, [fetchData, isOffline]);
+    return () => {
+        clearTimeout(loadingTimeout);
+        clearInterval(interval);
+    };
+  }, [fetchData, isOffline, isLoading]);
 
   // --- CRUD Handlers (Hybrid: API + Local) ---
 
@@ -753,9 +765,23 @@ const App: React.FC = () => {
         </div>
       )}
 
-      <Layout activeTab={activeTab} setActiveTab={setActiveTab} serverConnected={!isOffline}>
-        {renderContent()}
-      </Layout>
+      {/* Loading State - Show if splash is gone but data is still loading */}
+      {!showSplash && isLoading && (
+        <div className="fixed inset-0 z-50 bg-slate-950 flex flex-col items-center justify-center">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-vestra-gold mx-auto mb-4"></div>
+            <h2 className="text-xl font-bold text-white mb-2">Loading Application</h2>
+            <p className="text-slate-400">Initializing your property portfolio...</p>
+          </div>
+        </div>
+      )}
+
+      {/* Main App - Only show when not loading */}
+      {!showSplash && !isLoading && (
+        <Layout activeTab={activeTab} setActiveTab={setActiveTab} serverConnected={!isOffline}>
+          {renderContent()}
+        </Layout>
+      )}
     </>
   );
 };
