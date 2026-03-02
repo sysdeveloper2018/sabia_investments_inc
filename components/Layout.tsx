@@ -6,7 +6,8 @@ import {
   MessageSquare, 
   LayoutDashboard,
   Wifi,
-  WifiOff
+  WifiOff,
+  Building
 } from 'lucide-react';
 
 interface LayoutProps {
@@ -21,6 +22,7 @@ const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTab, serv
     { id: 'dashboard', label: 'Home', icon: <LayoutDashboard size={22} /> },
     { id: 'properties', label: 'Assets', icon: <Building2 size={22} /> },
     { id: 'projects', label: 'Projects', icon: <Users size={22} /> },
+    { id: 'appraisers', label: 'Appraisers', icon: <Building size={22} /> },
     { id: 'financials', label: 'ROI', icon: <Calculator size={22} /> },
     { id: 'communications', label: 'Chat', icon: <MessageSquare size={22} /> },
   ];

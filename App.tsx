@@ -4,6 +4,7 @@ import { PropertyManager } from './components/PropertyManager';
 import ProjectTracker from './components/ProjectTracker';
 import Financials from './components/Financials';
 import CommunicationLogComponent from './components/CommunicationLog';
+import PropertyAppraisers from './components/PropertyAppraisers';
 import { Property, Contractor, WorkItem, CommunicationLog, WorkStatus, PropertyType, ContactRole } from './types';
 import { ArrowUpRight, DollarSign, Activity, Wifi, WifiOff, RefreshCw, Loader2, Info, CloudOff, Plus, TrendingUp, Calendar, Home, Hammer, FileText, Users, Download, Upload } from 'lucide-react';
 import { formatCurrency } from './utils';
@@ -364,6 +365,8 @@ const App: React.FC = () => {
           onAddContractor={handleAddContractor}
           onAddWorkItem={handleAddWorkItem}
         />;
+      case 'appraisers':
+        return <PropertyAppraisers />;
       case 'financials':
         return <Financials properties={properties} workItems={workItems} />;
       case 'communications':
