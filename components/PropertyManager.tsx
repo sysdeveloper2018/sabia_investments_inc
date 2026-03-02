@@ -1,7 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Property, PropertyType, PropertyDocument, LinkItem } from '../types';
-import { ChevronDown, ChevronUp, Plus, MapPin, DollarSign, Home, Download, Image as ImageIcon, Upload, X, Pencil, Wrench, Trees, FileSpreadsheet, CheckCircle, Trash2, AlertTriangle, FileText, Map, Landmark, Hammer, Calculator, ArrowLeft, ExternalLink, Eye, Loader2, Clock, Link as LinkIcon, MessageSquare, FolderInput, StopCircle, ChevronLeft, ChevronRight, Maximize2, Box, Database } from 'lucide-react';
+import { ChevronDown, ChevronUp, Plus, MapPin, DollarSign, Home, Download, Image as ImageIcon, Upload, X, Pencil, Wrench, Trees, FileSpreadsheet, CheckCircle, Trash2, AlertTriangle, FileText, Map, Landmark, Hammer, Calculator, ArrowLeft, ExternalLink, Eye, Loader2, Clock, Link as LinkIcon, MessageSquare, FolderInput, StopCircle, ChevronLeft, ChevronRight, Maximize2, Box, Database, Search } from 'lucide-react';
 import { downloadCSV, parseCSV, processImage, formatCurrency } from '../utils';
+import { searchVolusiaAppraiser } from '../services/volusiaService';
 
 interface PropertyManagerProps {
   properties: Property[];
@@ -106,6 +107,11 @@ export const PropertyManager: React.FC<PropertyManagerProps> = ({ properties, on
 
   // Additional Features Input State
   const [featureInput, setFeatureInput] = useState('');
+
+  // Volusia Appraisal Search State
+  const [isSearchingAppraisal, setIsSearchingAppraisal] = useState(false);
+  const [appraisalSearchStatus, setAppraisalSearchStatus] = useState<'idle' | 'searching' | 'success' | 'error'>('idle');
+  const [appraisalResult, setAppraisalResult] = useState<any>(null);
 
   // New Property State
   const [newProp, setNewProp] = useState<Partial<Property>>({
@@ -462,9 +468,13 @@ export const PropertyManager: React.FC<PropertyManagerProps> = ({ properties, on
     setFeatureInput('');
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newProp.address) return; 
+
+    // Start appraisal search in background
+    setAppraisalSearchStatus('searching');
+    setIsSearchingAppraisal(true);
 
     const baseProperty: any = {
         purchasePrice: 0,
@@ -487,13 +497,42 @@ export const PropertyManager: React.FC<PropertyManagerProps> = ({ properties, on
         ...newProp
     };
 
+    // Add property first
+    const propertyToAdd = { ...baseProperty, id: Date.now().toString(), purchaseDate: new Date().toISOString().split('T')[0] };
+    
     if (editingId) {
         onUpdateProperty({ ...baseProperty, id: editingId });
     } else {
-        onAddProperty({ ...baseProperty, id: Date.now().toString(), purchaseDate: new Date().toISOString().split('T')[0] });
+        await onAddProperty(propertyToAdd);
     }
-    
-    resetForm();
+
+    // Search Volusia County Appraiser in background
+    try {
+        const appraisalResult = await searchVolusiaAppraiser(newProp.address);
+        setAppraisalResult(appraisalResult);
+        
+        if (appraisalResult.success) {
+            setAppraisalSearchStatus('success');
+            console.log('✅ Appraisal search completed for:', newProp.address);
+            
+            // You could update the property with appraisal data here
+            // For now, we'll just store the result
+        } else {
+            setAppraisalSearchStatus('error');
+            console.error('❌ Appraisal search failed:', appraisalResult.error);
+        }
+    } catch (error) {
+        setAppraisalSearchStatus('error');
+        console.error('❌ Appraisal search error:', error);
+    } finally {
+        setIsSearchingAppraisal(false);
+        // Don't reset form immediately so user can see the search status
+        setTimeout(() => {
+            resetForm();
+            setAppraisalSearchStatus('idle');
+            setAppraisalResult(null);
+        }, 3000); // Show status for 3 seconds
+    }
   };
 
   const handleExport = () => {
@@ -1856,10 +1895,50 @@ export const PropertyManager: React.FC<PropertyManagerProps> = ({ properties, on
             </div>
           </div>
 
-          <div className="p-4 bg-slate-900 border-t border-slate-800 flex justify-end">
-            <button type="submit" className="px-6 py-2 bg-vestra-gold text-slate-900 font-bold rounded-md shadow-lg hover:bg-yellow-500 transition-colors">
-              {editingId ? 'Update Property' : 'Save New Property'}
-            </button>
+          <div className="p-4 bg-slate-900 border-t border-slate-800">
+            {/* Appraisal Search Status */}
+            {appraisalSearchStatus !== 'idle' && (
+              <div className="mb-4 p-3 rounded-lg border flex items-center gap-3">
+                {appraisalSearchStatus === 'searching' && (
+                  <>
+                    <Loader2 className="animate-spin text-blue-400" size={20} />
+                    <div>
+                      <p className="text-sm font-medium text-white">Searching Volusia County Appraiser...</p>
+                      <p className="text-xs text-slate-400">Finding property records for your new address</p>
+                    </div>
+                  </>
+                )}
+                {appraisalSearchStatus === 'success' && (
+                  <>
+                    <CheckCircle className="text-green-400" size={20} />
+                    <div>
+                      <p className="text-sm font-medium text-white">Appraisal data found!</p>
+                      <p className="text-xs text-slate-400">Property records retrieved successfully</p>
+                    </div>
+                  </>
+                )}
+                {appraisalSearchStatus === 'error' && (
+                  <>
+                    <AlertTriangle className="text-red-400" size={20} />
+                    <div>
+                      <p className="text-sm font-medium text-white">Search completed</p>
+                      <p className="text-xs text-slate-400">Property saved (appraisal data unavailable)</p>
+                    </div>
+                  </>
+                )}
+              </div>
+            )}
+            
+            <div className="flex justify-end">
+              <button 
+                type="submit" 
+                disabled={isSearchingAppraisal}
+                className="px-6 py-2 bg-vestra-gold text-slate-900 font-bold rounded-md shadow-lg hover:bg-yellow-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+              >
+                {isSearchingAppraisal && <Loader2 className="animate-spin" size={16} />}
+                {editingId ? 'Update Property' : 'Save New Property'}
+              </button>
+            </div>
           </div>
         </form>
       )}

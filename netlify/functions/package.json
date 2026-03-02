@@ -1,1 +1,1 @@
-{"name": "netlify-functions", "version": "1.0.0", "type": "commonjs", "dependencies": {"nodemailer": "^7.0.13"}}
+{"name": "netlify-functions", "version": "1.0.0", "type": "commonjs", "dependencies": {"nodemailer": "^7.0.13", "selenium-webdriver": "^4.16.0", "@google/generative-ai": "^0.15.0"}}
