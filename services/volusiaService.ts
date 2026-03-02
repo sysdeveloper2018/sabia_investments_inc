@@ -1,8 +1,11 @@
 interface VolusiaAppraisalResult {
     success: boolean;
     searchAddress: string;
+    fullAddress: string;
+    directoryName: string;
     extractionResult?: any;
     screenshot?: string;
+    filesCreated?: string[];
     timestamp?: string;
     error?: string;
 }
@@ -32,6 +35,8 @@ export const searchVolusiaAppraiser = async (address: string): Promise<VolusiaAp
         return {
             success: false,
             searchAddress: address,
+            fullAddress: address,
+            directoryName: '',
             error: error instanceof Error ? error.message : 'Unknown error occurred'
         };
     }

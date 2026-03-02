@@ -25,7 +25,7 @@ function extractPartialAddress(fullAddress) {
     return parts[0] + ' ' + partialAddress;
 }
 
-async function extractWithGemini(imagePath) {
+async function extractWithGemini(imagePath, directoryPath) {
     console.log(`🧠 Gemini is performing deep analysis on ${imagePath}...`);
     
     try {
@@ -93,10 +93,34 @@ async function extractWithGemini(imagePath) {
             jsonData = { rawText: text };
         }
         
-        // Save the report
-        const reportPath = imagePath.replace(".png", "_report.json");
+        // Save multiple files in the directory
+        const timestamp = new Date().toISOString();
+        
+        // 1. Save JSON report
+        const reportPath = path.join(directoryPath, 'property_report.json');
         await fs.writeFile(reportPath, JSON.stringify(jsonData, null, 2));
-        console.log(`✅ Report saved to: ${reportPath}`);
+        console.log(`✅ JSON report saved to: ${reportPath}`);
+        
+        // 2. Save raw text report
+        const textReportPath = path.join(directoryPath, 'property_report_raw.txt');
+        await fs.writeFile(textReportPath, text);
+        console.log(`✅ Raw text report saved to: ${textReportPath}`);
+        
+        // 3. Save metadata file
+        const metadata = {
+            timestamp,
+            imagePath: path.basename(imagePath),
+            extractionModel: MODEL_ID,
+            filesGenerated: [
+                'property_snapshot.png',
+                'property_report.json',
+                'property_report_raw.txt',
+                'metadata.json'
+            ]
+        };
+        const metadataPath = path.join(directoryPath, 'metadata.json');
+        await fs.writeFile(metadataPath, JSON.stringify(metadata, null, 2));
+        console.log(`✅ Metadata saved to: ${metadataPath}`);
         
         return jsonData;
         
@@ -188,10 +212,20 @@ exports.handler = async function(event, context) {
             await searchInput.sendKeys(searchAddress);
             await driver.sleep(5000); // Wait for results
 
-            // Create folder structure (in Netlify, we'll use /tmp)
-            const folderName = searchAddress.trim().replace(/\s+/g, '_');
+            // Create folder structure based on full address
+            // Sanitize the full address for directory name
+            const sanitizedAddress = address.trim()
+                .toLowerCase()
+                .replace(/[^a-z0-9\s]/g, '') // Remove special characters
+                .replace(/\s+/g, '_') // Replace spaces with underscores
+                .substring(0, 50); // Limit length
+            
+            const timestamp = new Date().toISOString().replace(/[:.]/g, '-').substring(0, 19);
+            const folderName = `${sanitizedAddress}_${timestamp}`;
             const tmpDir = `/tmp/${folderName}`;
             await fs.mkdir(tmpDir, { recursive: true });
+            
+            console.log(`📁 Created directory: ${folderName}`);
 
             // Full page capture
             await driver.executeScript('window.scrollTo(0, document.body.scrollHeight);');
@@ -207,7 +241,7 @@ exports.handler = async function(event, context) {
             console.log(`📸 Screenshot captured (Height: ${totalHeight}px)`);
 
             // Extract with Gemini
-            const extractionResult = await extractWithGemini(screenshotPath);
+            const extractionResult = await extractWithGemini(screenshotPath, tmpDir);
 
             // Convert screenshot to base64 for response
             const imageBase64 = await fs.readFile(screenshotPath, 'base64');
@@ -218,8 +252,16 @@ exports.handler = async function(event, context) {
                 body: JSON.stringify({
                     success: true,
                     searchAddress,
+                    fullAddress: address,
+                    directoryName: folderName,
                     extractionResult,
                     screenshot: `data:image/png;base64,${imageBase64}`,
+                    filesCreated: [
+                        'property_snapshot.png',
+                        'property_report.json', 
+                        'property_report_raw.txt',
+                        'metadata.json'
+                    ],
                     timestamp: new Date().toISOString()
                 })
             };
